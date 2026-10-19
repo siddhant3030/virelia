@@ -1,8 +1,9 @@
-"""Guardrail engine: walk a tool payload, detect, resolve policy, transform.
+"""Guardrail engine: walk a payload, detect, resolve policy, transform.
 
 Transport-agnostic by design — payloads are plain Python values
-(dict/list/str/scalars), never MCP SDK types, so an MCP middleware or proxy
-adapter only needs to call scan_request()/scan_result() around a tool call.
+(dict/list/str/scalars), never framework types, so an adapter (LangChain
+middleware, MCP proxy, a plain decorator) only needs to call scan() — or the
+scan_request()/scan_result() shorthands — at each trust boundary.
 """
 
 from __future__ import annotations
@@ -74,22 +75,44 @@ class Engine:
 
     # -- public API ---------------------------------------------------------
 
+    def scan(
+        self,
+        payload: Any,
+        *,
+        source: str,
+        direction: Literal["request", "result"],
+        vault: TokenVault | None = None,
+    ) -> GuardrailResult:
+        """Scrub any payload crossing a trust boundary.
+
+        ``source`` names the surface — a tool name for tool traffic, ``"llm"``
+        by convention for model traffic. It is what policy ``match.tool`` globs
+        match against and what audit events record in their ``tool`` field.
+        ``vault`` overrides the engine's vault for this call, so one engine
+        (and its loaded NER model) can serve many token scopes.
+        """
+        return self._scan(source, payload, direction, vault or self.vault)
+
     def scan_result(
         self, tool_name: str, payload: Any, context: dict | None = None
     ) -> GuardrailResult:
         """Scrub a tool result before it reaches the model."""
-        return self._scan(tool_name, payload, "result")
+        return self._scan(tool_name, payload, "result", self.vault)
 
     def scan_request(
         self, tool_name: str, args: Any, context: dict | None = None
     ) -> GuardrailResult:
         """Scrub tool arguments before they reach the tool."""
-        return self._scan(tool_name, args, "request")
+        return self._scan(tool_name, args, "request", self.vault)
 
     # -- pipeline -----------------------------------------------------------
 
     def _scan(
-        self, tool: str, payload: Any, direction: Literal["request", "result"]
+        self,
+        tool: str,
+        payload: Any,
+        direction: Literal["request", "result"],
+        vault: TokenVault | None,
     ) -> GuardrailResult:
         findings: list[Finding] = []
         leaf_text: dict[PathTuple, str] = {}
@@ -109,7 +132,7 @@ class Engine:
                     Finding(
                         span=Span(0, len(text), "STRUCTURAL", 1.0, 0, "policy_match"),
                         path=path,
-                        resolved_action=self._effective(pinned.action),
+                        resolved_action=self._effective(pinned.action, vault),
                         rule_id=pinned.id,
                     )
                 )
@@ -148,13 +171,13 @@ class Engine:
                     Finding(
                         span=span,
                         path=path,
-                        resolved_action=self._effective(action),
+                        resolved_action=self._effective(action, vault),
                         rule_id=rule.id if rule else None,
                     )
                 )
 
         events = [self._event(tool, direction, f, leaf_text) for f in findings]
-        new_payload = _rebuild(payload, (), _group(findings), self.policy.name, self.vault)
+        new_payload = _rebuild(payload, (), _group(findings), self.policy.name, vault)
         for event in events:
             self._emit(event)
         return GuardrailResult(payload=new_payload, events=events)
@@ -193,11 +216,11 @@ class Engine:
                 return rule  # first match wins, in policy file order
         return None
 
-    def _effective(self, action: Action) -> Action:
+    def _effective(self, action: Action, vault: TokenVault | None) -> Action:
         """Fail-safe: tokenize needs a vault; without one, degrade to mask
         so the value is still hidden (just not consistently or reversibly).
         Findings and audit events record the action actually applied."""
-        if action is Action.TOKENIZE and self.vault is None:
+        if action is Action.TOKENIZE and vault is None:
             if not self._warned_no_vault:
                 self._warned_no_vault = True
                 logger.warning(

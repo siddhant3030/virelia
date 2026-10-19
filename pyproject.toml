@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "virelia"
 version = "0.3.0"
-description = "Privacy guardrail layer for MCP tool traffic — detect PII, apply declarative policies, mask/block/audit. India-first (DPDP), fully open source."
+description = "Privacy guardrail middleware for AI agents — mask PII and secrets in prompts, tool calls and MCP traffic before they reach a model, with reversible tokens and hash-only audit. LangChain-ready, India-first (DPDP), fully open source."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [{ name = "Project Tech4Dev", email = "dalgo-engineering@projecttech4dev.org" }]
-keywords = ["mcp", "privacy", "pii", "guardrail", "redaction", "dpdp", "aadhaar"]
+keywords = ["llm", "agents", "middleware", "langchain", "mcp", "privacy", "pii", "guardrail", "redaction", "dpdp", "aadhaar"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -33,6 +33,8 @@ ner = ["presidio-analyzer>=2.2,<3", "spacy>=3.7,<4"]
 llm = []
 otel = []
 proxy = ["fastmcp>=3,<4"]
+# Agent middleware for langchain.agents.create_agent and LCEL chains.
+langchain = ["langchain>=1.0,<2"]
 postgres = ["psycopg>=3.1"]
 # Tokenization vault: Fernet (authenticated encryption) for values at rest.
 # Apache-2.0/BSD dual-licensed; behind an extra so the base install stays light.
@@ -44,6 +46,7 @@ dev = [
     "ruff>=0.8",
     "fastmcp>=3,<4",
     "cryptography>=42",
+    "langchain>=1.0,<2",
 ]
 
 [tool.hatch.build.targets.wheel]

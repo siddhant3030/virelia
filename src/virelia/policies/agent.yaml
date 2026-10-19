@@ -1,0 +1,30 @@
+# Agent-middleware policy — the default for Guard and framework integrations.
+# Built for the reversible flow: contact details and IDs become stable tokens
+# ([EMAIL_1], [AADHAAR_1]) that the model can reason about and pass to tools,
+# and that are restored before a tool runs or the user reads the reply.
+# Tokenize needs a vault (pip install 'virelia[vault]'); without one the
+# engine degrades tokenize to mask, so nothing leaks either way.
+#
+# Like `personal`, names and addresses in free text need the [ner] extra plus
+# a PERSON_NAME/ADDRESS rule here.
+name: agent
+version: 1
+defaults:
+  unknown_entity_action: allow
+  min_confidence: 0.4
+rules:
+  - id: secrets-block
+    entities: [AWS_ACCESS_KEY, GITHUB_TOKEN, JWT]
+    action: block
+    scope: result
+    message: "A credential was detected; the message was not sent to the model."
+  - id: financial-block
+    entities: [CREDIT_CARD, BANK_ACCOUNT]
+    action: block
+    message: "A financial identifier was detected and withheld."
+  - id: identity-tokenize
+    entities: [EMAIL, PHONE, AADHAAR, PAN, GOVT_ID, UPI_ID]
+    action: tokenize
+  - id: infra-allow
+    entities: [IP_ADDRESS, IFSC]
+    action: allow

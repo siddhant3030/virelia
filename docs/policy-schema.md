@@ -93,6 +93,9 @@ declare them to the loader with `load_policy(path, extra_entities=["MY_ENTITY"])
 
 ## Shipped presets
 
+- **agent** — the agent-middleware default: contact details and IDs tokenized
+  (reversible with a vault), card/bank numbers withheld, credentials refuse
+  the whole message, unknown → allow. See [langchain.md](langchain.md).
 - **ngo-default** — contact info partial-masked, government/financial IDs and
   credentials blocked, names masked, addresses/DOB redacted, unknown → mask.
 - **strict** — credentials withhold the whole result; all known PII blocked;
