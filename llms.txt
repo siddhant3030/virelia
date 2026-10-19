@@ -1,6 +1,7 @@
 # virelia
 
-> Privacy guardrail for MCP tool traffic and Claude Code: detects PII
+> Privacy middleware for AI agents — LangChain, any Python agent loop, MCP
+> tool traffic and Claude Code: detects PII
 > (India-first: Aadhaar/Verhoeff, PAN, IFSC; plus emails, phones, cards/Luhn,
 > credentials), applies declarative YAML policies (allow/partial_mask/mask/
 > tokenize/redact/block), keeps a hash-only audit trail. Apache-2.0,
@@ -9,6 +10,7 @@
 ## Docs
 
 - [README](README.md): pitch, quickstart, Claude Code plugin install
+- [LangChain & agents](docs/langchain.md): VireliaMiddleware for create_agent, Guard API, LCEL runnables, trust boundary
 - [Claude Code plugin](docs/claude-plugin.md): the three guards, proxy setup, config
 - [Policy schema](docs/policy-schema.md): YAML reference, actions, json_path grammar, entity types
 - [Architecture](docs/architecture.md): tiers, scan pipeline, adapter contract
@@ -17,7 +19,9 @@
 
 ## Code
 
-- [Engine](src/virelia/engine.py): scan_request/scan_result over plain JSON payloads
+- [Engine](src/virelia/engine.py): scan() (plus scan_request/scan_result) over plain JSON payloads
+- [Guard](src/virelia/guard.py): framework-neutral mask/restore for chat messages and a @guard.tool decorator
+- [LangChain integration](src/virelia/integrations/langchain.py): AgentMiddleware + LCEL runnables
 - [Detectors](src/virelia/detectors/): regex + checksum entity detectors, column-name heuristics
 - [Hooks](src/virelia/hooks/): Claude Code hook handlers (prompt/tool-input/tool-output guards)
 - [Proxy](src/virelia/adapters/proxy.py): masking MCP gateway (fastmcp)

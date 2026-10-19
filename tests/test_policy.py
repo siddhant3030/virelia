@@ -15,7 +15,8 @@ def base(**overrides):
 
 class TestPresets:
     @pytest.mark.parametrize(
-        "name", ["ngo-default", "strict", "dev", "personal", "dpdp", "gdpr", "hipaa-lite"]
+        "name",
+        ["ngo-default", "strict", "dev", "personal", "agent", "dpdp", "gdpr", "hipaa-lite"],
     )
     def test_shipped_presets_load(self, name):
         policy = load_preset(name)

@@ -1,4 +1,5 @@
-"""Transport adapters — future milestone.
+"""MCP transport adapters. (Agent-framework integrations such as LangChain
+live in ``virelia.integrations`` and build on :class:`virelia.Guard`.)
 
 The engine is transport-agnostic on purpose; an adapter only has to:
 

@@ -9,21 +9,24 @@
   ╚═══╝   ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚═╝ ╚═╝  ╚═╝
 ```
 
-### The local privacy guardrail for AI agents — one guard, both doors.
+### Privacy middleware for AI agents — any agent, any tool, any model.
 
-Mask the personal data and secrets in **what you type into any LLM** *and* in
-**what any MCP server's tools return** — before either reaches a third-party
-model. Fully local, reversible, no cloud in the loop.
+Mask the personal data and secrets in **your agent's prompts, tool calls and
+MCP traffic** before any of it reaches a third-party model — then restore the
+real values for your tools and your users. Drop it into a LangChain agent, wrap
+any Python function, or put it in front of any MCP server. Fully local,
+reversible, no cloud in the loop.
 
 [![CI](https://github.com/siddhant3030/virelia/actions/workflows/ci.yml/badge.svg)](https://github.com/siddhant3030/virelia/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/virelia)](https://pypi.org/project/virelia/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-245%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-276%20passing-brightgreen)](tests/)
 
 **prompts · tool calls · MCP traffic** &nbsp;|&nbsp; detect → ask → mask &nbsp;|&nbsp; checksum-validated &nbsp;|&nbsp; hash-only audit &nbsp;|&nbsp; local-first
 
-[Quick Start](#-quick-start-claude-code-in-60-seconds) ·
+[Agent Middleware](#-drop-into-any-agent) ·
+[Claude Code](#-claude-code-in-60-seconds) ·
 [Masking Proxy](#-mask-mcp-tool-outputs-with-the-proxy) ·
 [Docker](#-docker) ·
 [Detection](#-what-it-detects) ·
@@ -58,7 +61,51 @@ back. Nothing personal leaves unmasked.
                   * opt-in, behind the [ner] extra   † planned
 ```
 
-## 🚀 Quick start: Claude Code in 60 seconds
+## 🧩 Drop into any agent
+
+```bash
+pip install 'virelia[langchain,vault]'
+```
+
+```python
+from langchain.agents import create_agent
+from virelia import Vault
+from virelia.integrations.langchain import VireliaMiddleware
+
+agent = create_agent(model, tools, middleware=[VireliaMiddleware(vault=Vault())])
+```
+
+The model is the only party that sees stand-ins — your tools and your users
+get the real values back:
+
+```
+user types        email lakshmi@example.org, aadhaar 2345 6789 0124
+model sees        email [EMAIL_1], aadhaar [AADHAAR_1]
+model calls       send_email(to="[EMAIL_1]")
+tool receives     send_email(to="lakshmi@example.org")
+user reads        Done — emailed lakshmi@example.org.
+```
+
+Tokens are stable per conversation thread, so the model can still reason
+("the same person as before"), and API keys or tokens never reach the
+provider at all. Not on LangChain? The framework-neutral `Guard` does the same
+for any agent loop:
+
+```python
+from virelia import Guard, Vault, load_preset
+
+guard = Guard(load_preset("agent"), vault=Vault())
+masked = guard.mask_messages(messages)       # send masked.payload to any LLM API
+reply = guard.restore_messages([reply])      # tokens → real values
+
+@guard.tool                                  # any Python callable used as a tool
+def send_sms(phone: str, body: str) -> dict: ...
+```
+
+Full guide — LCEL chains, thread scoping, blocking behavior:
+[docs/langchain.md](docs/langchain.md).
+
+## 🚀 Claude Code in 60 seconds
 
 ```bash
 uv tool install virelia        # or: pip install virelia
@@ -253,8 +300,9 @@ rules:
 ```
 
 Actions `allow | partial_mask | mask | tokenize | redact | block`,
-first-match-wins, `scope: result` refuses a whole payload. Seven shipped
-presets: `personal` (plugin default), `ngo-default`, `strict`, `dev`, plus
+first-match-wins, `scope: result` refuses a whole payload. Eight shipped
+presets: `agent` (middleware default), `personal` (plugin default),
+`ngo-default`, `strict`, `dev`, plus
 draft regulation packs `dpdp`, `gdpr`, `hipaa-lite`
 ([docs/policy-packs.md](docs/policy-packs.md)).
 Reference: [docs/policy-schema.md](docs/policy-schema.md). `tokenize` swaps a
@@ -274,13 +322,15 @@ inside Claude Code.
 ## 🗺️ Where virelia sits
 
 Of the four agent-guardrail stages — data collection, model training,
-**agent tools & actions**, prompt/response — virelia owns stage 3 at the MCP
-protocol layer, where structured tool traffic actually exists. LLM gateways
-(Portkey, Kong) guard stage 4; nothing open-source guarded stage 3. Built for
+**agent tools & actions**, prompt/response — virelia covers stages 3 and 4
+with one engine: inside the agent (LangChain middleware, the `Guard` API) and
+at the MCP protocol layer, where structured tool traffic actually exists.
+LLM gateways (Portkey, Kong) guard only stage 4, and framework PII filters are
+regex lists without checksums, reversible tokens or an audit trail. Built for
 sovereignty-sensitive deployments (NGOs under India's DPDP Act): fully
 self-hosted, no vendor vault, no SaaS calls, every dependency permissive OSS.
 
-## ⚠️ Honest limitations (v0.2)
+## ⚠️ Honest limitations
 
 - **NER is opt-in** — without the `[ner]` extra, free-text names/addresses
   are caught only via column-name heuristics; a name inside a paragraph gets
@@ -289,11 +339,14 @@ self-hosted, no vendor vault, no SaaS calls, every dependency permissive OSS.
 - Prompt guard can't *rewrite* prompts (Claude Code hook limitation) — it
   blocks and hands you the masked copy.
 - Tool-output hook can't *unsend* — it warns; true masking needs the proxy.
+- Agent middleware restores tokens after the model call returns, so a
+  *streamed* reply shows tokens until the final message lands. Partial masks
+  (`s***@example.org`) are one-way; only `tokenize` round-trips.
 - Checksums shrink false positives, can't zero them; confidence is never 1.0.
 - Protects against **accidental** exposure, not malicious servers or prompt
   injection: [docs/threat-model.md](docs/threat-model.md).
 
-## 🐍 Library use (any Python agent, 3 lines)
+## 🐍 Engine API (raw payloads, 3 lines)
 
 ```bash
 uv add virelia        # or: pip install virelia
@@ -303,14 +356,18 @@ uv add virelia        # or: pip install virelia
 from virelia import Engine, load_preset
 
 engine = Engine(load_preset("ngo-default"))
-result = engine.scan_result("get_beneficiaries", rows)   # masked payload + audit events
+result = engine.scan(rows, source="get_beneficiaries", direction="result")
 ```
+
+`result.payload` is the masked copy, `result.events` the audit trail, and
+`result.blocked` says whether policy withheld it entirely.
 
 ## 📚 Documentation
 
 | Doc | What's inside |
 |---|---|
 | [Architecture](docs/architecture.md) | engine internals, scan pipeline, performance posture |
+| [LangChain & agents](docs/langchain.md) | agent middleware, `Guard`, LCEL runnables, trust boundary |
 | [Claude Code plugin](docs/claude-plugin.md) | the three guards, per-guard config, proxy setup |
 | [Policy schema](docs/policy-schema.md) | full YAML reference for rules, actions, matching |
 | [Policy packs](docs/policy-packs.md) | draft DPDP / GDPR / HIPAA-lite presets compared |
@@ -323,7 +380,7 @@ result = engine.scan_result("get_beneficiaries", rows)   # masked payload + audi
 uv sync && uv run pytest && uv run ruff check .
 ```
 
-128+ tests including a golden corpus of synthetic, checksum-valid records
+270+ tests including a golden corpus of synthetic, checksum-valid records
 (no real personal data anywhere). Contributions welcome — especially
 detectors for more ID systems and an India-tuned NER pack:
 [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -331,8 +388,10 @@ detectors for more ID systems and an India-tuned NER pack:
 ## 🧭 Roadmap
 
 - [x] **NER tier** — Presidio + India-tuned recognizers (`[ner]` extra)
-- [ ] **Reversible tokenization vault** with rehydration at trusted sinks
-- [ ] **SQLite/Postgres audit sinks** + `virelia audit` CLI
+- [x] **Reversible tokenization vault** with rehydration at trusted sinks
+- [x] **SQLite/Postgres audit sinks** + `virelia audit` CLI
+- [x] **Agent middleware** — LangChain `create_agent` + framework-neutral `Guard`
+- [ ] More frameworks — OpenAI Agents SDK, LlamaIndex, Pydantic AI
 - [x] **Policy packs** — DPDP, GDPR, HIPAA-lite (draft, pending legal mapping in #15)
 - [ ] **Multilingual** detection
 
