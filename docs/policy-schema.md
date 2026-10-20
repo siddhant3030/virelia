@@ -10,7 +10,9 @@ version: 1                 # optional, recorded in audit events via policy name
 defaults:
   unknown_entity_action: mask   # action for detected entities no rule covers
   min_confidence: 0.4           # findings below this confidence are dropped
-  ner: auto                     # NER tier ([ner] extra): auto | true | false
+  ner: auto                     # NER tier: auto | true | false
+  ner_backend: presidio         # presidio ([ner] extra) | gliner ([gliner] extra)
+  ner_model: null               # gliner only: HF model id or local directory
 rules:
   - id: contact-partial         # required, unique
     entities: [EMAIL, PHONE]    # entity types this rule acts on
@@ -45,7 +47,13 @@ rules:
 - `defaults.ner` gates the optional NER tier: `auto` (default) loads it only when
   the policy acts on entities tiers 0–1 can't find in free text (`PERSON_NAME`,
   `ADDRESS`, `UPI_ID`); `true` always loads it when installed; `false` never.
-  Without the `[ner]` extra the setting is inert.
+  Without the backend's extra installed the setting is inert.
+- `defaults.ner_backend` picks the model behind that tier: `presidio` (default;
+  spaCy + India-context recognizers) or `gliner` (an open-source transformer,
+  multilingual by default). `defaults.ner_model` overrides the GLiNER model with
+  a Hugging Face id or a local directory — use a local directory on machines
+  that must not reach the Hub. See
+  [the GLiNER backend](architecture.md#the-gliner-backend-gliner-extra).
 
 ## Actions
 

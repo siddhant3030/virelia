@@ -58,7 +58,7 @@ back. Nothing personal leaves unmasked.
                 │              T3 LLM†        Audit events    │
                 │                             (hash-only)     │
                 └─────────────────────────────────────────────┘
-                  * opt-in, behind the [ner] extra   † planned
+                  * opt-in, behind the [ner] or [gliner] extra   † planned
 ```
 
 ## 🧩 Drop into any agent
@@ -280,6 +280,19 @@ Without the extra the engine runs exactly as before — NER confidence is always
 capped below a checksum-validated match, and `defaults.ner: false` turns the
 tier off per policy.
 
+Prefer an open-source transformer model? The `[gliner]` extra swaps spaCy for
+[GLiNER](https://github.com/urchade/GLiNER) (Apache-2.0, runs locally on CPU):
+
+```bash
+pip install 'virelia[gliner]'      # pulls torch
+```
+```yaml
+defaults:
+  ner_backend: gliner              # default model: urchade/gliner_multi-v2.1
+```
+
+`benchmarks/bench_ner.py` compares the backends on synthetic free text.
+
 ## 📜 Policies are YAML, not code
 
 ```yaml
@@ -388,6 +401,8 @@ detectors for more ID systems and an India-tuned NER pack:
 ## 🧭 Roadmap
 
 - [x] **NER tier** — Presidio + India-tuned recognizers (`[ner]` extra)
+- [x] **Open-source transformer NER** — GLiNER backend (`[gliner]` extra)
+- [ ] Indic-script NER — evaluate ai4bharat/IndicNER (MIT) against the benchmark
 - [x] **Reversible tokenization vault** with rehydration at trusted sinks
 - [x] **SQLite/Postgres audit sinks** + `virelia audit` CLI
 - [x] **Agent middleware** — LangChain `create_agent` + framework-neutral `Guard`

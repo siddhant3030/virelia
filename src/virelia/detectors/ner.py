@@ -49,7 +49,7 @@ _SPACY_MODELS = ("en_core_web_lg", "en_core_web_md", "en_core_web_sm")
 # Common Indian given names that spaCy's English models often miss in
 # transliterated text. Matched case-sensitively as whole words, so common
 # lowercase words never fire.
-_INDIAN_GIVEN_NAMES = [
+INDIAN_GIVEN_NAMES = [
     "Aarav", "Aditi", "Akash", "Amit", "Ananya", "Anil", "Anjali", "Arjun",
     "Asha", "Ayesha", "Deepak", "Devi", "Divya", "Farhan", "Fatima",
     "Gaurav", "Geeta", "Gopal", "Harish", "Imran", "Ishita", "Jyoti",
@@ -194,7 +194,7 @@ def _india_recognizers() -> list:
         PatternRecognizer(
             supported_entity="PERSON",
             name="in_person_names",
-            deny_list=_INDIAN_GIVEN_NAMES,
+            deny_list=INDIAN_GIVEN_NAMES,
             deny_list_score=0.65,
             global_regex_flags=case_sensitive,
         ),

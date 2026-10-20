@@ -30,6 +30,11 @@ virelia = "virelia.cli.main:main"
 # All dependencies must be permissively-licensed open source (see CONTRIBUTING.md).
 # The [ner] extra also needs a spaCy model: python -m spacy download en_core_web_sm
 ner = ["presidio-analyzer>=2.2,<3", "spacy>=3.7,<4"]
+# Open-source transformer NER (GLiNER, Apache-2.0; pulls torch, so check wheel
+# availability on new Pythons). Select it with defaults.ner_backend: gliner.
+# Default model urchade/gliner_multi-v2.1 (Apache-2.0). sentencepiece and
+# protobuf are needed to load its mDeBERTa tokenizer.
+gliner = ["gliner>=0.2.29,<0.3", "sentencepiece>=0.2", "protobuf>=4"]
 llm = []
 otel = []
 proxy = ["fastmcp>=3,<4"]

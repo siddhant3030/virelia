@@ -163,7 +163,7 @@ how, in about 150 lines.
   reply therefore shows `[EMAIL_1]` until the final message lands in state.
 - **Only `tokenize` can be reversed.** `partial_mask` (`l***@example.org`),
   `mask` and `redact` are one-way by design.
-- **Names in free text** need the `[ner]` extra plus a `PERSON_NAME` rule. See
+- **Names in free text** need the `[ner]` or `[gliner]` extra plus a `PERSON_NAME` rule. See
   the [README](../README.md#-what-it-detects).
 - **One vault connection per thread.** The guard keeps a vault handle open
   for every `thread_id` it has seen, until `middleware.guard.close()` is

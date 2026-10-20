@@ -5,7 +5,7 @@
 # Tokenize needs a vault (pip install 'virelia[vault]'); without one the
 # engine degrades tokenize to mask, so nothing leaks either way.
 #
-# Like `personal`, names and addresses in free text need the [ner] extra plus
+# Like `personal`, names and addresses in free text need the [ner] or [gliner] extra plus
 # a PERSON_NAME/ADDRESS rule here.
 name: agent
 version: 1
