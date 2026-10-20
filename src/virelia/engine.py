@@ -203,10 +203,18 @@ class Engine:
         if not self._ner_loaded:
             self._ner_loaded = True  # one load attempt per engine
             if self._ner_entities:
-                from virelia.detectors.ner import load_ner_detector
-
-                self._ner = load_ner_detector(self._ner_entities)
+                self._ner = self._load_ner()
         return self._ner.detect(text) if self._ner is not None else []
+
+    def _load_ner(self) -> Detector | None:
+        defaults = self.policy.defaults
+        if defaults.ner_backend == "gliner":
+            from virelia.detectors.gliner_ner import load_gliner_detector
+
+            return load_gliner_detector(self._ner_entities, defaults.ner_model)
+        from virelia.detectors.ner import load_ner_detector
+
+        return load_ner_detector(self._ner_entities)
 
     def _match_path_rule(self, tool: str, path: PathTuple) -> Rule | None:
         from virelia.pathmatch import matches

@@ -167,6 +167,56 @@ One operational note: Claude Code hook processes are short-lived, so each
 invocation pays the spaCy model load. The long-lived proxy (`virelia proxy`)
 is the right surface for NER.
 
+## The GLiNER backend (`[gliner]` extra)
+
+```bash
+pip install 'virelia[gliner]'   # gliner + torch, permissive licenses
+```
+```yaml
+defaults:
+  ner_backend: gliner
+  ner_model: urchade/gliner_multi-v2.1   # default; or a local directory
+```
+
+[GLiNER](https://github.com/urchade/GLiNER) is an open-source NER model that
+takes entity labels as plain text, so one model covers every label without
+retraining. Virelia prompts it for `person`, `address` and `upi id` and maps
+them to `PERSON_NAME`, `ADDRESS` and `UPI_ID`. Aadhaar, PAN and IFSC stay with
+Tier 1, where checksums beat any model. It follows the Presidio backend's
+contract: lazy import, one load per process, any failure disables the tier
+instead of breaking the scan, and confidence capped at 0.84. The Indian
+given-name list runs on this backend too, so switching backends never loses a
+name the other one caught.
+
+Two things differ from Presidio:
+
+- **Input window.** GLiNER silently drops everything past ~384 words, so a
+  name at the end of a long tool result would be missed. Long leaves are
+  scanned in 200-word windows overlapping by 30 words, with offsets carried
+  back into the original string.
+- **Weights come from the Hugging Face Hub** on first load (about 1.2 GB for
+  the default model, plus its mDeBERTa tokenizer). On a machine that must not make that call, download the
+  model once and set `ner_model` to the local directory, or set
+  `HF_HUB_OFFLINE=1` after a first run.
+
+**What it does and doesn't buy you today.** `benchmarks/bench_ner.py` runs both
+backends through the engine on 12 synthetic notes (English, transliterated
+Hindi, Hindi, Marathi, one ~750-word note, and decoys):
+
+| | names | addresses | UPI | decoys masked | per note |
+|---|---|---|---|---|---|
+| Presidio + `en_core_web_sm` | 6/9 | 1/2 | 1/1 | 0/10 | ~9 ms |
+| GLiNER `gliner_multi_pii-v1` | 6/9 | 1/2 | 1/1 | 0/10 | ~90 ms |
+| GLiNER `gliner_multi-v2.1` | 6/9 | 2/2 | 1/1 | 0/10 | ~110 ms |
+
+All three miss most names written in Devanagari. The general multilingual
+model (the default) is the only one that catches the Hindi address, which is
+why it is the default over the PII-tuned one. Otherwise GLiNER is not more
+accurate here, only ~10× slower; choose it for the open model and label
+flexibility, not for Indic name recall. The set is a smoke test, not the published benchmark
+(#9/#10). Indic-script names remain the open gap; ai4bharat/IndicNER (MIT) is
+the next candidate to evaluate against the same script.
+
 ## Performance posture
 
 Detection cost is policy-driven. With `unknown_entity_action: allow` (dev

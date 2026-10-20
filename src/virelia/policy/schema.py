@@ -52,10 +52,15 @@ class Defaults(BaseModel):
     # Fail closed: entities no rule covers still get masked.
     unknown_entity_action: Action = Action.MASK
     min_confidence: float = 0.4
-    # NER tier (requires the [ner] extra). "auto" loads it only when the
+    # NER tier ([ner] or [gliner] extra). "auto" loads it only when the
     # policy needs entities tiers 0-1 can't find in free text; true always
     # loads it; false never does. A missing extra silently disables it.
     ner: bool | Literal["auto"] = "auto"
+    # presidio: spaCy + India-context recognizers ([ner] extra). gliner: an
+    # open-source transformer, multilingual by default ([gliner] extra).
+    ner_backend: Literal["presidio", "gliner"] = "presidio"
+    # gliner only: a Hugging Face model id or a local directory.
+    ner_model: str | None = None
 
 
 class Policy(BaseModel):

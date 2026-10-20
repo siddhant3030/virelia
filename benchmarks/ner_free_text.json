@@ -1,0 +1,18 @@
+{
+  "description": "Synthetic free-text notes (no real persons) for comparing NER backends. Each case lists the values a backend must catch and decoys it must leave alone. Small by design: a smoke benchmark, not the published corpus tracked in issues #9/#10.",
+  "cases": [
+    {"lang": "en", "text": "Spoke to Lakshmi Devi about the next health checkup.", "catch": {"PERSON_NAME": ["Lakshmi Devi"]}, "keep": ["health checkup"]},
+    {"lang": "en", "text": "Field officer Bhavna Oraon visited 14 households in Ranchi on Tuesday.", "catch": {"PERSON_NAME": ["Bhavna Oraon"]}, "keep": ["Tuesday"]},
+    {"lang": "en", "text": "The beneficiary lives at 12 Temple Road, Sitapur, Uttar Pradesh 261001.", "catch": {"ADDRESS": ["12 Temple Road"]}, "keep": []},
+    {"lang": "en", "text": "Please send the stipend via upi to ramesh77@oksbi before Friday.", "catch": {"UPI_ID": ["ramesh77@oksbi"]}, "keep": ["Friday"]},
+    {"lang": "translit", "text": "Kal Sunita ji ke ghar gaye the, unke pati Mahendra Yadav ghar par nahi the.", "catch": {"PERSON_NAME": ["Mahendra Yadav"]}, "keep": ["ghar"]},
+    {"lang": "translit", "text": "Asha didi ne bataya ki Parvati Munda ka card abhi tak nahi bana.", "catch": {"PERSON_NAME": ["Parvati Munda"]}, "keep": ["card"]},
+    {"lang": "hi", "text": "आज लक्ष्मी देवी से मिले, उनके पति रमेश कुमार खेत पर थे।", "catch": {"PERSON_NAME": ["लक्ष्मी देवी", "रमेश कुमार"]}, "keep": ["खेत"]},
+    {"lang": "hi", "text": "सुनीता यादव का पता: मकान नंबर 45, गांधी नगर, सीतापुर।", "catch": {"PERSON_NAME": ["सुनीता यादव"], "ADDRESS": ["गांधी नगर"]}, "keep": []},
+    {"lang": "mr", "text": "प्रिया पाटील यांनी पुण्यातील कोथरूड केंद्राला भेट दिली.", "catch": {"PERSON_NAME": ["प्रिया पाटील"]}, "keep": []},
+    {"lang": "en", "text": "The water supply committee meets on the first Monday of every month.", "catch": {}, "keep": ["water supply committee", "Monday"]},
+    {"lang": "en", "text": "Run the migration, then restart the worker and check the queue depth.", "catch": {}, "keep": ["migration", "worker"]},
+    {"lang": "long", "text": "@@FILLER@@ At the end of the meeting, Geetanjali Toppo volunteered to collect the forms.", "catch": {"PERSON_NAME": ["Geetanjali Toppo"]}, "keep": []}
+  ],
+  "filler": "The committee reviewed attendance registers, discussed the monsoon preparedness plan, and agreed on the schedule for the next round of household surveys. "
+}
